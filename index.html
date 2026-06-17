@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fruit & Vegetable Ripeness Detector</title>
+    
+    <!-- FORCED LOADING: Libraries moved to the head tag to prevent 'not defined' errors -->
+    <script src="https://jsdelivr.net"></script>
+    <script src="https://jsdelivr.net"></script>
+
     <style>
         :root {
             --primary: #4CAF50;
@@ -101,12 +106,8 @@
     <div id="label-container"></div>
 </div>
 
-<!-- FIXED: Full, working script paths added below -->
-<script src="https://jsdelivr.net"></script>
-<script src="https://jsdelivr.net"></script>
-
 <script type="text/javascript">
-    const URL = "https://teachablemachine.withgoogle.com/models/_ZyGXwbcZ/";
+    const URL = "https://withgoogle.com";
 
     let model, webcam, labelContainer, maxPredictions;
 
@@ -116,6 +117,12 @@
 
         try {
             document.getElementById("webcam-container").innerHTML = "Loading Model...";
+            
+            // Check if library is available
+            if (typeof tmImage === 'undefined') {
+                throw new Error("Google libraries are still downloading. Please wait 5 seconds and click Start again.");
+            }
+
             model = await tmImage.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
 
@@ -138,7 +145,7 @@
                 labelContainer.appendChild(div);
             }
         } catch (error) {
-            document.getElementById("webcam-container").innerHTML = "Error: " + error.message;
+            document.getElementById("webcam-container").innerHTML = "<span style='color:red; padding:10px; font-size:12px;'>" + error.message + "</span>";
             console.error(error);
         }
     }
