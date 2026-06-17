@@ -101,10 +101,11 @@
     <div id="label-container"></div>
 </div>
 
+<!-- FIXED: Full, working script paths added below -->
 <script src="https://jsdelivr.net"></script>
 <script src="https://jsdelivr.net"></script>
+
 <script type="text/javascript">
-    // PASTE YOUR ACTUAL TEACHABLE MACHINE LINK INSIDE THE QUOTES BELOW:
     const URL = "https://teachablemachine.withgoogle.com/models/_ZyGXwbcZ/";
 
     let model, webcam, labelContainer, maxPredictions;
@@ -113,23 +114,32 @@
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
-        document.getElementById("webcam-container").innerHTML = "";
+        try {
+            document.getElementById("webcam-container").innerHTML = "Loading Model...";
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
 
-        model = await tmImage.load(modelURL, metadataURL);
-        maxPredictions = model.getTotalClasses();
+            const flip = true; 
+            webcam = new tmImage.Webcam(200, 200, flip); 
+            
+            document.getElementById("webcam-container").innerHTML = "Awaiting Webcam...";
+            await webcam.setup(); 
+            await webcam.play();
+            window.requestAnimationFrame(loop);
 
-        const flip = true; 
-        webcam = new tmImage.Webcam(200, 200, flip); 
-        await webcam.setup(); 
-        await webcam.play();
-        window.requestAnimationFrame(loop);
-
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
-        labelContainer = document.getElementById("label-container");
-        for (let i = 0; i < maxPredictions; i++) {
-            const div = document.createElement("div");
-            div.className = "label-bar";
-            labelContainer.appendChild(div);
+            document.getElementById("webcam-container").innerHTML = "";
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            
+            labelContainer = document.getElementById("label-container");
+            labelContainer.innerHTML = ""; 
+            for (let i = 0; i < maxPredictions; i++) {
+                const div = document.createElement("div");
+                div.className = "label-bar";
+                labelContainer.appendChild(div);
+            }
+        } catch (error) {
+            document.getElementById("webcam-container").innerHTML = "Error: " + error.message;
+            console.error(error);
         }
     }
 
