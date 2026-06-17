@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fruit & Vegetable Ripeness Detector</title>
     
-    <!-- FORCED LOADING: Libraries moved to the head tag to prevent 'not defined' errors -->
-    <script src="https://jsdelivr.net"></script>
-    <script src="https://jsdelivr.net"></script>
+    <!-- CHANGED: Switched to Unpkg alternative links for bulletproof loading -->
+    <script src="https://unpkg.com"></script>
+    <script src="https://unpkg.com"></script>
 
     <style>
         :root {
@@ -118,9 +118,9 @@
         try {
             document.getElementById("webcam-container").innerHTML = "Loading Model...";
             
-            // Check if library is available
+            // Re-verify framework availability
             if (typeof tmImage === 'undefined') {
-                throw new Error("Google libraries are still downloading. Please wait 5 seconds and click Start again.");
+                throw new Error("Framework files are blocked by your browser network. Try using an Incognito window or different browser.");
             }
 
             model = await tmImage.load(modelURL, metadataURL);
