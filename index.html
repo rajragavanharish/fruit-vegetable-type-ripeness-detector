@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fruit & Vegetable Ripeness Detector</title>
     
-    <!-- CHANGED: Switched to Unpkg alternative links for bulletproof loading -->
-    <script src="https://unpkg.com"></script>
+    <!-- Using alternative p5 and ml5 libraries which handle Teachable Machine models natively -->
+    <script src="https://cloudflare.com"></script>
     <script src="https://unpkg.com"></script>
 
     <style>
@@ -48,34 +48,15 @@
             font-size: 14px;
             margin-bottom: 25px;
         }
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 16px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
-        }
-        button:hover { background-color: var(--primary-hover); }
-        button:active { transform: scale(0.98); }
-        #webcam-container {
+        /* Canvas positioning inside our UI grid */
+        #canvas-wrapper {
             margin: 20px auto;
             border-radius: 12px;
             overflow: hidden;
             width: 200px;
             height: 200px;
             background: #e0e0e0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
-        }
-        #webcam-container canvas {
-            display: block;
         }
         #label-container {
             margin-top: 20px;
@@ -94,74 +75,79 @@
             font-weight: 600;
             font-size: 15px;
         }
+        #status-msg {
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Fruit & Vegetable Ripeness Detector</h1>
-    <p>Click start and allow webcam access to scan your produce items live.</p>
-    <button type="button" onclick="init()">Start Detector</button>
-    <div id="webcam-container"><span>Webcam Off</span></div>
+    <p>Allow webcam access to scan your produce items live.</p>
+    <div id="status-msg">Initializing Application...</div>
+    <div id="canvas-wrapper"></div>
     <div id="label-container"></div>
 </div>
 
 <script type="text/javascript">
-    const URL = "https://withgoogle.com";
+    // Your exact model endpoint
+    const modelURL = "https://withgoogle.com";
+    
+    let classifier;
+    let video;
+    let labelContainer;
 
-    let model, webcam, labelContainer, maxPredictions;
+    function setup() {
+        // Create canvas inside our wrapper layout grid element
+        let canvas = createCanvas(200, 200);
+        canvas.parent('canvas-wrapper');
+        
+        // Boot streaming video immediately
+        video = createCapture(VIDEO);
+        video.size(200, 200);
+        video.hide();
 
-    async function init() {
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
-
-        try {
-            document.getElementById("webcam-container").innerHTML = "Loading Model...";
-            
-            // Re-verify framework availability
-            if (typeof tmImage === 'undefined') {
-                throw new Error("Framework files are blocked by your browser network. Try using an Incognito window or different browser.");
-            }
-
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
-
-            const flip = true; 
-            webcam = new tmImage.Webcam(200, 200, flip); 
-            
-            document.getElementById("webcam-container").innerHTML = "Awaiting Webcam...";
-            await webcam.setup(); 
-            await webcam.play();
-            window.requestAnimationFrame(loop);
-
-            document.getElementById("webcam-container").innerHTML = "";
-            document.getElementById("webcam-container").appendChild(webcam.canvas);
-            
-            labelContainer = document.getElementById("label-container");
-            labelContainer.innerHTML = ""; 
-            for (let i = 0; i < maxPredictions; i++) {
-                const div = document.createElement("div");
-                div.className = "label-bar";
-                labelContainer.appendChild(div);
-            }
-        } catch (error) {
-            document.getElementById("webcam-container").innerHTML = "<span style='color:red; padding:10px; font-size:12px;'>" + error.message + "</span>";
-            console.error(error);
-        }
+        labelContainer = document.getElementById("label-container");
+        document.getElementById("status-msg").innerText = "Loading AI Intelligence Model...";
+        
+        // Load the model using ml5 library instead of original tmImage
+        classifier = ml5.imageClassifier(modelURL + 'model.json', video, modelReady);
     }
 
-    async function loop() {
-        webcam.update(); 
-        await predict();
-        window.requestAnimationFrame(loop);
+    function modelReady() {
+        document.getElementById("status-msg").innerText = "System Active";
+        classifyVideo();
     }
 
-    async function predict() {
-        const prediction = await model.predict(webcam.canvas);
-        for (let i = 0; i < maxPredictions; i++) {
-            const classPrediction = prediction[i].className + ": " + (prediction[i].probability * 100).toFixed(0) + "%";
-            labelContainer.childNodes[i].innerHTML = classPrediction;
+    function classifyVideo() {
+        classifier.classify(gotResult);
+    }
+
+    function draw() {
+        // Draw video capture directly to screen canvas
+        image(video, 0, 0, 200, 200);
+    }
+
+    function gotResult(error, results) {
+        if (error) {
+            document.getElementById("status-msg").innerText = "Error: " + error.message;
+            return;
         }
+        
+        // Render outputs 
+        labelContainer.innerHTML = "";
+        for (let i = 0; i < results.length; i++) {
+            const div = document.createElement("div");
+            div.className = "label-bar";
+            div.innerHTML = "<span>" + results[i].label + "</span><span>" + (results[i].confidence * 100).toFixed(0) + "%</span>";
+            labelContainer.appendChild(div);
+        }
+        
+        // Loop classifications smoothly
+        classifyVideo();
     }
 </script>
 
